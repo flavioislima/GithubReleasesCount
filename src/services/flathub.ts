@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const FLATHUB_API_BASE = 'https://flathub.org/api/v2';
 
 export interface FlathubStats {
@@ -9,15 +11,16 @@ export interface FlathubStats {
 }
 
 export async function fetchFlathubStats(appId: string): Promise<FlathubStats> {
-  const response = await fetch(`${FLATHUB_API_BASE}/stats/${appId}`);
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error(`Flathub app "${appId}" not found`);
+  try {
+    const response = await axios.get<FlathubStats>(`${FLATHUB_API_BASE}/stats/${appId}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        throw new Error(`Flathub app "${appId}" not found`);
+      }
+      throw new Error(`Flathub API error: ${error.response?.status} ${error.response?.statusText || error.message}`);
     }
-    throw new Error(`Flathub API error: ${response.status} ${response.statusText}`);
+    throw error;
   }
-
-  const data: FlathubStats = await response.json();
-  return data;
 }
