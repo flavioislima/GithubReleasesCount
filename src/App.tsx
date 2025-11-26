@@ -15,12 +15,14 @@ function App() {
   const [repoName, setRepoName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [flathubError, setFlathubError] = useState('');
   const [skippedExtensions, setSkippedExtensions] = useState<Set<string>>(new Set(['.yml', '.yaml']));
   const [flathubStats, setFlathubStats] = useState<FlathubStats | null>(null);
 
   const handleFetch = useCallback(async (owner: string, repo: string, flathubAppId?: string) => {
     setIsLoading(true);
     setError('');
+    setFlathubError('');
     setReleases([]);
     setFlathubStats(null);
     
@@ -35,8 +37,9 @@ function App() {
           const flathubData = await fetchFlathubStats(flathubAppId);
           setFlathubStats(flathubData);
         } catch (flathubErr) {
-          // Don't fail the whole request if Flathub fails
-          console.warn('Flathub fetch failed:', flathubErr);
+          // Show Flathub error but don't fail the whole request
+          const message = flathubErr instanceof Error ? flathubErr.message : 'Failed to fetch Flathub data';
+          setFlathubError(`Flathub: ${message}`);
         }
       }
     } catch (err) {
@@ -122,7 +125,13 @@ function App() {
         
         {error && (
           <div className="w-full max-w-xl mx-auto mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">
-            {error}
+            <strong>GitHub Error:</strong> {error}
+          </div>
+        )}
+        
+        {flathubError && (
+          <div className="w-full max-w-xl mx-auto mb-6 p-4 bg-yellow-100 border border-yellow-300 rounded-lg text-yellow-700">
+            <strong>Flathub Error:</strong> {flathubError}
           </div>
         )}
         
