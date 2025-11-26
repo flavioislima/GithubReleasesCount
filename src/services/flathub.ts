@@ -1,8 +1,3 @@
-import axios from 'axios';
-
-// Using CORS proxy to avoid CORS issues with Flathub API
-const FLATHUB_API_BASE = 'https://corsproxy.io/?https://flathub.org/api/v2';
-
 export interface FlathubStats {
   id: string;
   installs_total: number;
@@ -12,16 +7,18 @@ export interface FlathubStats {
 }
 
 export async function fetchFlathubStats(appId: string): Promise<FlathubStats> {
-  try {
-    const response = await axios.get<FlathubStats>(`${FLATHUB_API_BASE}/stats/${appId}`);
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 404) {
-        throw new Error(`Flathub app "${appId}" not found`);
-      }
-      throw new Error(`Flathub API error: ${error.response?.status} ${error.response?.statusText || error.message}`);
+  // URL encode the full Flathub API URL for the CORS proxy
+  const flathubUrl = `https://flathub.org/api/v2/stats/${appId}`;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(flathubUrl)}`;
+  
+  const response = await fetch(proxyUrl);
+  
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Flathub app "${appId}" not found`);
     }
-    throw error;
+    throw new Error(`Flathub API error: ${response.status} ${response.statusText}`);
   }
+  
+  return response.json();
 }

@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type { GitHubRelease } from '../types/github';
 
 const GITHUB_API_BASE = 'https://api.github.com';
@@ -10,39 +9,36 @@ export async function fetchReleases(owner: string, repo: string): Promise<GitHub
   const perPage = 100;
 
   while (true) {
-    try {
-      const response = await axios.get<GitHubRelease[]>(
-        `${GITHUB_API_BASE}/repos/${owner}/${repo}/releases`,
-        {
-          params: { page, per_page: perPage },
-          headers: {
-            'Accept': 'application/vnd.github.v3+json',
-          },
-        }
-      );
+    const url = new URL(`${GITHUB_API_BASE}/repos/${owner}/${repo}/releases`);
+    url.searchParams.set('page', page.toString());
+    url.searchParams.set('per_page', perPage.toString());
 
-      const releases = response.data;
-      
-      if (releases.length === 0) {
-        break;
-      }
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
 
-      allReleases.push(...releases);
-      
-      if (releases.length < perPage) {
-        break;
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Repository "${owner}/${repo}" not found`);
       }
-      
-      page++;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 404) {
-          throw new Error(`Repository "${owner}/${repo}" not found`);
-        }
-        throw new Error(`GitHub API error: ${error.response?.status} ${error.response?.statusText || error.message}`);
-      }
-      throw error;
+      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
+
+    const releases: GitHubRelease[] = await response.json();
+    
+    if (releases.length === 0) {
+      break;
+    }
+
+    allReleases.push(...releases);
+    
+    if (releases.length < perPage) {
+      break;
+    }
+    
+    page++;
   }
 
   return allReleases;

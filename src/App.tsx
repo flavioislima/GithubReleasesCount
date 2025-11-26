@@ -27,20 +27,26 @@ function App() {
     setFlathubStats(null);
     
     try {
-      const data = await fetchReleases(owner, repo);
-      setReleases(data);
+      // Fetch both GitHub and Flathub data in parallel
+      const promises: [Promise<GitHubRelease[]>, Promise<FlathubStats | null>] = [
+        fetchReleases(owner, repo),
+        flathubAppId
+          ? fetchFlathubStats(flathubAppId).catch((flathubErr) => {
+              // Show Flathub error but don't fail the whole request
+              const message = flathubErr instanceof Error ? flathubErr.message : 'Failed to fetch Flathub data';
+              setFlathubError(`Flathub: ${message}`);
+              return null;
+            })
+          : Promise.resolve(null),
+      ];
+
+      const [githubData, flathubData] = await Promise.all(promises);
+      
+      setReleases(githubData);
       setRepoName(`${owner}/${repo}`);
       
-      // Fetch Flathub stats if app ID is provided
-      if (flathubAppId) {
-        try {
-          const flathubData = await fetchFlathubStats(flathubAppId);
-          setFlathubStats(flathubData);
-        } catch (flathubErr) {
-          // Show Flathub error but don't fail the whole request
-          const message = flathubErr instanceof Error ? flathubErr.message : 'Failed to fetch Flathub data';
-          setFlathubError(`Flathub: ${message}`);
-        }
+      if (flathubData) {
+        setFlathubStats(flathubData);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
