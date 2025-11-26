@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
 
 interface RepoInputProps {
-  onSubmit: (owner: string, repo: string) => void;
+  onSubmit: (owner: string, repo: string, flathubAppId?: string) => void;
   isLoading: boolean;
 }
 
 const DEFAULT_REPO = 'Heroic-Games-Launcher/HeroicGamesLauncher';
+const DEFAULT_FLATHUB_APP_ID = 'com.heroicgameslauncher.hgl';
 const STORAGE_KEY = 'github-releases-recent-repos';
 const MAX_RECENT_REPOS = 5;
 
@@ -33,6 +34,7 @@ function addRepoToRecent(currentRepos: string[], newRepo: string): string[] {
 
 export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
   const [value, setValue] = useState(DEFAULT_REPO);
+  const [flathubAppId, setFlathubAppId] = useState(DEFAULT_FLATHUB_APP_ID);
   const [error, setError] = useState('');
   const [recentRepos, setRecentRepos] = useState<string[]>(() => getRecentRepos());
 
@@ -52,7 +54,7 @@ export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
     const updatedRecent = addRepoToRecent(recentRepos, trimmed);
     setRecentRepos(updatedRecent);
     saveRecentReposToStorage(updatedRecent);
-    onSubmit(owner, repo);
+    onSubmit(owner, repo, flathubAppId.trim() || undefined);
   };
 
   const handleRecentClick = (repo: string) => {
@@ -82,6 +84,22 @@ export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
           {isLoading ? 'Loading...' : 'Fetch'}
         </button>
       </div>
+      
+      <div className="mt-4">
+        <label htmlFor="flathub-input" className="block text-sm font-medium text-gray-700 mb-2">
+          Flathub App ID (optional - counts as Linux downloads)
+        </label>
+        <input
+          id="flathub-input"
+          type="text"
+          value={flathubAppId}
+          onChange={(e) => setFlathubAppId(e.target.value)}
+          placeholder="e.g., com.heroicgameslauncher.hgl"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          disabled={isLoading}
+        />
+      </div>
+      
       {error && (
         <p className="mt-2 text-sm text-red-600">{error}</p>
       )}

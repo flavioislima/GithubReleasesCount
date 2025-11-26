@@ -7,6 +7,7 @@ import { DownloadStats } from './components/DownloadStats';
 import { TopReleases } from './components/TopReleases';
 import { OSFilter } from './components/OSFilter';
 import { fetchReleases, getFileExtension } from './services/github';
+import { fetchFlathubStats, type FlathubStats } from './services/flathub';
 import type { GitHubRelease, AssetDownloadData, ExtensionStats } from './types/github';
 
 function App() {
@@ -15,16 +16,29 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [skippedExtensions, setSkippedExtensions] = useState<Set<string>>(new Set(['.yml', '.yaml']));
+  const [flathubStats, setFlathubStats] = useState<FlathubStats | null>(null);
 
-  const handleFetch = useCallback(async (owner: string, repo: string) => {
+  const handleFetch = useCallback(async (owner: string, repo: string, flathubAppId?: string) => {
     setIsLoading(true);
     setError('');
     setReleases([]);
+    setFlathubStats(null);
     
     try {
       const data = await fetchReleases(owner, repo);
       setReleases(data);
       setRepoName(`${owner}/${repo}`);
+      
+      // Fetch Flathub stats if app ID is provided
+      if (flathubAppId) {
+        try {
+          const flathubData = await fetchFlathubStats(flathubAppId);
+          setFlathubStats(flathubData);
+        } catch (flathubErr) {
+          // Don't fail the whole request if Flathub fails
+          console.warn('Flathub fetch failed:', flathubErr);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -119,6 +133,7 @@ function App() {
               totalAssets={totals.assets}
               totalReleases={totals.releases}
               repoName={repoName}
+              flathubDownloads={flathubStats?.installs_total}
             />
             
             <ExtensionFilter
@@ -132,7 +147,7 @@ function App() {
               <TimeChart assets={filteredAssets} />
             </div>
             
-            <OSFilter assets={filteredAssets} />
+            <OSFilter assets={filteredAssets} flathubDownloads={flathubStats?.installs_total} />
             
             <TopReleases releases={releases} skippedExtensions={skippedExtensions} />
           </>

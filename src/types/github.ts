@@ -34,3 +34,5 @@ export interface TimeRangeData {
   date: string;
   downloads: number;
 }
+
+export type { FlathubStats } from '../services/flathub';
