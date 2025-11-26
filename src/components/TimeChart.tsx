@@ -40,7 +40,7 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
 ];
 
 export function TimeChart({ assets }: TimeChartProps) {
-  const [selectedRange, setSelectedRange] = useState<TimeRange>('month');
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('alltime');
 
   const chartData = useMemo(() => {
     const now = new Date();
