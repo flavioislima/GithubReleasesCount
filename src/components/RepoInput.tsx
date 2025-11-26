@@ -6,10 +6,35 @@ interface RepoInputProps {
 }
 
 const DEFAULT_REPO = 'Heroic-Games-Launcher/HeroicGamesLauncher';
+const STORAGE_KEY = 'github-releases-recent-repos';
+const MAX_RECENT_REPOS = 5;
+
+function getRecentRepos(): string[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentReposToStorage(repos: string[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(repos));
+  } catch {
+    // localStorage might be unavailable
+  }
+}
+
+function addRepoToRecent(currentRepos: string[], newRepo: string): string[] {
+  const filtered = currentRepos.filter((r) => r !== newRepo);
+  return [newRepo, ...filtered].slice(0, MAX_RECENT_REPOS);
+}
 
 export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
   const [value, setValue] = useState(DEFAULT_REPO);
   const [error, setError] = useState('');
+  const [recentRepos, setRecentRepos] = useState<string[]>(() => getRecentRepos());
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -24,7 +49,14 @@ export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
     }
 
     const [, owner, repo] = match;
+    const updatedRecent = addRepoToRecent(recentRepos, trimmed);
+    setRecentRepos(updatedRecent);
+    saveRecentReposToStorage(updatedRecent);
     onSubmit(owner, repo);
+  };
+
+  const handleRecentClick = (repo: string) => {
+    setValue(repo);
   };
 
   return (
@@ -52,6 +84,24 @@ export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
       </div>
       {error && (
         <p className="mt-2 text-sm text-red-600">{error}</p>
+      )}
+      {recentRepos.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs text-gray-500 mb-2">Recent:</p>
+          <div className="flex flex-wrap gap-2">
+            {recentRepos.map((repo) => (
+              <button
+                key={repo}
+                type="button"
+                onClick={() => handleRecentClick(repo)}
+                disabled={isLoading}
+                className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-200"
+              >
+                {repo}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </form>
   );
