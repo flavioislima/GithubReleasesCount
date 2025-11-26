@@ -5,8 +5,10 @@ interface RepoInputProps {
   isLoading: boolean;
 }
 
+const DEFAULT_REPO = 'Heroic-Games-Launcher/HeroicGamesLauncher';
+
 export function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(DEFAULT_REPO);
   const [error, setError] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
