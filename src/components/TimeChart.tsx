@@ -25,7 +25,7 @@ ChartJS.register(
   Filler
 );
 
-type TimeRange = 'day' | 'week' | 'month' | '365days';
+type TimeRange = 'day' | 'week' | 'month' | '365days' | 'alltime';
 
 interface TimeChartProps {
   assets: AssetDownloadData[];
@@ -36,6 +36,7 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: 'week', label: 'Last Week' },
   { value: 'month', label: 'Last Month' },
   { value: '365days', label: 'Last 365 Days' },
+  { value: 'alltime', label: 'All Time' },
 ];
 
 export function TimeChart({ assets }: TimeChartProps) {
@@ -47,6 +48,7 @@ export function TimeChart({ assets }: TimeChartProps) {
     let groupingFn: (date: Date) => string;
     let intervalFn: (interval: { start: Date; end: Date }) => Date[];
     let formatFn: (date: Date) => string;
+    let useAllTime = false;
 
     switch (selectedRange) {
       case 'day':
@@ -73,6 +75,16 @@ export function TimeChart({ assets }: TimeChartProps) {
         intervalFn = eachMonthOfInterval;
         formatFn = (date: Date) => format(date, 'MMM yyyy');
         break;
+      case 'alltime': {
+        useAllTime = true;
+        // Find the earliest date from assets
+        const dates = assets.map(a => parseISO(a.date)).filter(d => !isNaN(d.getTime()));
+        startDate = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : subDays(now, 365);
+        groupingFn = (date: Date) => format(startOfMonth(date), 'yyyy-MM');
+        intervalFn = eachMonthOfInterval;
+        formatFn = (date: Date) => format(date, 'MMM yyyy');
+        break;
+      }
       default:
         startDate = subMonths(now, 1);
         groupingFn = (date: Date) => format(startOfDay(date), 'yyyy-MM-dd');
@@ -80,11 +92,13 @@ export function TimeChart({ assets }: TimeChartProps) {
         formatFn = (date: Date) => format(date, 'MMM dd');
     }
 
-    // Filter assets by date range
-    const filteredAssets = assets.filter((asset) => {
-      const assetDate = parseISO(asset.date);
-      return isAfter(assetDate, startDate);
-    });
+    // Filter assets by date range (for all time, include all assets)
+    const filteredAssets = useAllTime 
+      ? assets 
+      : assets.filter((asset) => {
+          const assetDate = parseISO(asset.date);
+          return isAfter(assetDate, startDate);
+        });
 
     // Group downloads by date
     const downloadsByDate = new Map<string, number>();
@@ -97,11 +111,11 @@ export function TimeChart({ assets }: TimeChartProps) {
     // Generate all dates in range for proper x-axis
     const allDates = intervalFn({ start: startDate, end: now });
     
-    // Special handling for monthly grouping in 365 days view
+    // Special handling for monthly grouping in 365 days view and all time
     let labels: string[];
     let data: number[];
     
-    if (selectedRange === '365days') {
+    if (selectedRange === '365days' || selectedRange === 'alltime') {
       // Group by month for yearly view
       const monthlyData = new Map<string, number>();
       allDates.forEach((date) => {
@@ -131,7 +145,7 @@ export function TimeChart({ assets }: TimeChartProps) {
           borderColor: 'rgb(59, 130, 246)',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           tension: 0.3,
-          pointRadius: selectedRange === '365days' ? 4 : 3,
+          pointRadius: (selectedRange === '365days' || selectedRange === 'alltime') ? 4 : 3,
           pointHoverRadius: 6,
         },
       ],

@@ -5,6 +5,7 @@ import { ExtensionChart } from './components/ExtensionChart';
 import { TimeChart } from './components/TimeChart';
 import { DownloadStats } from './components/DownloadStats';
 import { TopReleases } from './components/TopReleases';
+import { OSFilter } from './components/OSFilter';
 import { fetchReleases, getFileExtension } from './services/github';
 import type { GitHubRelease, AssetDownloadData, ExtensionStats } from './types/github';
 
@@ -130,6 +131,8 @@ function App() {
               <ExtensionChart stats={extensionStats} />
               <TimeChart assets={filteredAssets} />
             </div>
+            
+            <OSFilter assets={filteredAssets} />
             
             <TopReleases releases={releases} skippedExtensions={skippedExtensions} />
           </>
