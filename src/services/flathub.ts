@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const FLATHUB_API_BASE = 'https://flathub.org/api/v2';
+// Using CORS proxy to avoid CORS issues with Flathub API
+const FLATHUB_API_BASE = 'https://corsproxy.io/?https://flathub.org/api/v2';
 
 export interface FlathubStats {
   id: string;
