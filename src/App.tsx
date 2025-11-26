@@ -16,7 +16,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [flathubError, setFlathubError] = useState('');
-  const [skippedExtensions, setSkippedExtensions] = useState<Set<string>>(new Set(['.yml', '.yaml']));
+  const [skippedExtensions, setSkippedExtensions] = useState<Set<string>>(new Set(['.yml', '.yaml', '.blockmap']));
   const [flathubStats, setFlathubStats] = useState<FlathubStats | null>(null);
 
   const handleFetch = useCallback(async (owner: string, repo: string, flathubAppId?: string) => {
