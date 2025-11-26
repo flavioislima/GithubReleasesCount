@@ -91,13 +91,22 @@ function App() {
       });
     });
 
+    // Add Flathub downloads as .flatpak extension
+    if (flathubStats && flathubStats.installs_total > 0) {
+      const current = statsMap.get('.flatpak') || { count: 0, totalDownloads: 0 };
+      statsMap.set('.flatpak', {
+        count: current.count + 1,
+        totalDownloads: current.totalDownloads + flathubStats.installs_total,
+      });
+    }
+
     return Array.from(statsMap.entries())
       .map(([extension, stats]) => ({
         extension,
         ...stats,
       }))
       .sort((a, b) => b.totalDownloads - a.totalDownloads);
-  }, [filteredAssets]);
+  }, [filteredAssets, flathubStats]);
 
   // Calculate totals
   const totals = useMemo(() => {
