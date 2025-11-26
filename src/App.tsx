@@ -68,11 +68,14 @@ function App() {
     );
   }, [releases]);
 
-  // Get unique extensions
+  // Get unique extensions (include .flatpak if Flathub stats exist)
   const uniqueExtensions = useMemo(() => {
     const exts = new Set(allAssets.map((a) => a.extension));
+    if (flathubStats && flathubStats.installs_total > 0) {
+      exts.add('.flatpak');
+    }
     return Array.from(exts).sort();
-  }, [allAssets]);
+  }, [allAssets, flathubStats]);
 
   // Filter assets by skipped extensions
   const filteredAssets = useMemo(() => {
@@ -91,8 +94,8 @@ function App() {
       });
     });
 
-    // Add Flathub downloads as .flatpak extension
-    if (flathubStats && flathubStats.installs_total > 0) {
+    // Add Flathub downloads as .flatpak extension (if not skipped)
+    if (flathubStats && flathubStats.installs_total > 0 && !skippedExtensions.has('.flatpak')) {
       const current = statsMap.get('.flatpak') || { count: 0, totalDownloads: 0 };
       statsMap.set('.flatpak', {
         count: current.count + 1,
@@ -106,7 +109,15 @@ function App() {
         ...stats,
       }))
       .sort((a, b) => b.totalDownloads - a.totalDownloads);
-  }, [filteredAssets, flathubStats]);
+  }, [filteredAssets, flathubStats, skippedExtensions]);
+
+  // Get filtered Flathub downloads (only if .flatpak is not skipped)
+  const filteredFlathubDownloads = useMemo(() => {
+    if (flathubStats && flathubStats.installs_total > 0 && !skippedExtensions.has('.flatpak')) {
+      return flathubStats.installs_total;
+    }
+    return undefined;
+  }, [flathubStats, skippedExtensions]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -157,7 +168,7 @@ function App() {
               totalAssets={totals.assets}
               totalReleases={totals.releases}
               repoName={repoName}
-              flathubDownloads={flathubStats?.installs_total}
+              flathubDownloads={filteredFlathubDownloads}
             />
             
             <ExtensionFilter
@@ -171,7 +182,7 @@ function App() {
               <TimeChart assets={filteredAssets} />
             </div>
             
-            <OSFilter assets={filteredAssets} flathubDownloads={flathubStats?.installs_total} />
+            <OSFilter assets={filteredAssets} flathubDownloads={filteredFlathubDownloads} />
             
             <TopReleases releases={releases} skippedExtensions={skippedExtensions} />
           </>
