@@ -7,6 +7,7 @@ import { DownloadStats } from './components/DownloadStats';
 import { TopReleases } from './components/TopReleases';
 import { OSFilter } from './components/OSFilter';
 import { fetchReleases, getFileExtension } from './services/github';
+import { fetchFlathubStats, type FlathubStats } from './services/flathub';
 import type { GitHubRelease, AssetDownloadData, ExtensionStats } from './types/github';
 
 function App() {
@@ -14,17 +15,39 @@ function App() {
   const [repoName, setRepoName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [skippedExtensions, setSkippedExtensions] = useState<Set<string>>(new Set(['.yml', '.yaml']));
+  const [flathubError, setFlathubError] = useState('');
+  const [skippedExtensions, setSkippedExtensions] = useState<Set<string>>(new Set(['.yml', '.yaml', '.blockmap']));
+  const [flathubStats, setFlathubStats] = useState<FlathubStats | null>(null);
 
-  const handleFetch = useCallback(async (owner: string, repo: string) => {
+  const handleFetch = useCallback(async (owner: string, repo: string, flathubAppId?: string) => {
     setIsLoading(true);
     setError('');
+    setFlathubError('');
     setReleases([]);
+    setFlathubStats(null);
     
     try {
-      const data = await fetchReleases(owner, repo);
-      setReleases(data);
+      // Fetch both GitHub and Flathub data in parallel
+      const promises: [Promise<GitHubRelease[]>, Promise<FlathubStats | null>] = [
+        fetchReleases(owner, repo),
+        flathubAppId
+          ? fetchFlathubStats(flathubAppId).catch((flathubErr) => {
+              // Show Flathub error but don't fail the whole request
+              const message = flathubErr instanceof Error ? flathubErr.message : 'Failed to fetch Flathub data';
+              setFlathubError(`Flathub: ${message}`);
+              return null;
+            })
+          : Promise.resolve(null),
+      ];
+
+      const [githubData, flathubData] = await Promise.all(promises);
+      
+      setReleases(githubData);
       setRepoName(`${owner}/${repo}`);
+      
+      if (flathubData) {
+        setFlathubStats(flathubData);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -45,11 +68,14 @@ function App() {
     );
   }, [releases]);
 
-  // Get unique extensions
+  // Get unique extensions (include .flatpak if Flathub stats exist)
   const uniqueExtensions = useMemo(() => {
     const exts = new Set(allAssets.map((a) => a.extension));
+    if (flathubStats && flathubStats.installs_total > 0) {
+      exts.add('.flatpak');
+    }
     return Array.from(exts).sort();
-  }, [allAssets]);
+  }, [allAssets, flathubStats]);
 
   // Filter assets by skipped extensions
   const filteredAssets = useMemo(() => {
@@ -68,13 +94,30 @@ function App() {
       });
     });
 
+    // Add Flathub downloads as .flatpak extension (if not skipped)
+    if (flathubStats && flathubStats.installs_total > 0 && !skippedExtensions.has('.flatpak')) {
+      const current = statsMap.get('.flatpak') || { count: 0, totalDownloads: 0 };
+      statsMap.set('.flatpak', {
+        count: current.count + 1,
+        totalDownloads: current.totalDownloads + flathubStats.installs_total,
+      });
+    }
+
     return Array.from(statsMap.entries())
       .map(([extension, stats]) => ({
         extension,
         ...stats,
       }))
       .sort((a, b) => b.totalDownloads - a.totalDownloads);
-  }, [filteredAssets]);
+  }, [filteredAssets, flathubStats, skippedExtensions]);
+
+  // Get filtered Flathub downloads (only if .flatpak is not skipped)
+  const filteredFlathubDownloads = useMemo(() => {
+    if (flathubStats && flathubStats.installs_total > 0 && !skippedExtensions.has('.flatpak')) {
+      return flathubStats.installs_total;
+    }
+    return undefined;
+  }, [flathubStats, skippedExtensions]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -108,7 +151,13 @@ function App() {
         
         {error && (
           <div className="w-full max-w-xl mx-auto mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">
-            {error}
+            <strong>GitHub Error:</strong> {error}
+          </div>
+        )}
+        
+        {flathubError && (
+          <div className="w-full max-w-xl mx-auto mb-6 p-4 bg-yellow-100 border border-yellow-300 rounded-lg text-yellow-700">
+            <strong>Flathub Error:</strong> {flathubError}
           </div>
         )}
         
@@ -119,6 +168,7 @@ function App() {
               totalAssets={totals.assets}
               totalReleases={totals.releases}
               repoName={repoName}
+              flathubDownloads={filteredFlathubDownloads}
             />
             
             <ExtensionFilter
@@ -132,7 +182,7 @@ function App() {
               <TimeChart assets={filteredAssets} />
             </div>
             
-            <OSFilter assets={filteredAssets} />
+            <OSFilter assets={filteredAssets} flathubDownloads={filteredFlathubDownloads} />
             
             <TopReleases releases={releases} skippedExtensions={skippedExtensions} />
           </>

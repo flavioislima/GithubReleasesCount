@@ -3,6 +3,7 @@ import type { AssetDownloadData } from '../types/github';
 
 interface OSFilterProps {
   assets: AssetDownloadData[];
+  flathubDownloads?: number;
 }
 
 type OperatingSystem = 'windows' | 'macos' | 'linux' | 'other';
@@ -44,7 +45,7 @@ const OS_COLORS: Record<OperatingSystem, { bg: string; text: string; border: str
   other: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
 };
 
-export function OSFilter({ assets }: OSFilterProps) {
+export function OSFilter({ assets, flathubDownloads }: OSFilterProps) {
   const osStats = useMemo((): OSStats[] => {
     const stats: OSStats[] = [];
     const allOsExtensions = new Set<string>();
@@ -54,9 +55,14 @@ export function OSFilter({ assets }: OSFilterProps) {
       const extensions = OS_EXTENSIONS[os];
       extensions.forEach(ext => allOsExtensions.add(ext));
       
-      const totalDownloads = assets
+      let totalDownloads = assets
         .filter((asset) => extensions.includes(asset.extension.toLowerCase()))
         .reduce((sum, asset) => sum + asset.downloadCount, 0);
+      
+      // Add Flathub downloads to Linux count
+      if (os === 'linux' && flathubDownloads != null) {
+        totalDownloads += flathubDownloads;
+      }
       
       stats.push({
         os,
@@ -83,7 +89,7 @@ export function OSFilter({ assets }: OSFilterProps) {
     });
     
     return stats;
-  }, [assets]);
+  }, [assets, flathubDownloads]);
 
   const totalDownloads = osStats.reduce((sum, s) => sum + s.totalDownloads, 0);
 
@@ -96,6 +102,7 @@ export function OSFilter({ assets }: OSFilterProps) {
             ? ((stat.totalDownloads / totalDownloads) * 100).toFixed(1) 
             : '0';
           const colors = OS_COLORS[stat.os];
+          const showFlathub = stat.os === 'linux' && flathubDownloads != null;
           
           return (
             <div 
@@ -111,6 +118,12 @@ export function OSFilter({ assets }: OSFilterProps) {
               {stat.extensions.length > 0 && (
                 <div className="text-xs text-gray-400 mt-2">
                   {stat.extensions.join(', ')}
+                  {showFlathub && ', Flathub'}
+                </div>
+              )}
+              {showFlathub && (
+                <div className="text-xs text-green-600 mt-1">
+                  +{flathubDownloads.toLocaleString()} from Flathub
                 </div>
               )}
             </div>

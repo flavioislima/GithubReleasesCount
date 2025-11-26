@@ -9,14 +9,15 @@ export async function fetchReleases(owner: string, repo: string): Promise<GitHub
   const perPage = 100;
 
   while (true) {
-    const response = await fetch(
-      `${GITHUB_API_BASE}/repos/${owner}/${repo}/releases?page=${page}&per_page=${perPage}`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-        },
-      }
-    );
+    const url = new URL(`${GITHUB_API_BASE}/repos/${owner}/${repo}/releases`);
+    url.searchParams.set('page', page.toString());
+    url.searchParams.set('per_page', perPage.toString());
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
