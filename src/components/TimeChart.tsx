@@ -97,7 +97,7 @@ export function TimeChart({ assets }: TimeChartProps) {
     // Generate all dates in range for proper x-axis
     const allDates = intervalFn({ start: startDate, end: now });
     
-    // Special handling for week grouping in 365 days view
+    // Special handling for monthly grouping in 365 days view
     let labels: string[];
     let data: number[];
     

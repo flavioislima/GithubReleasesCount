@@ -14,16 +14,29 @@ interface ExtensionChartProps {
 }
 
 const CHART_COLORS = [
-  'rgb(59, 130, 246)',   // blue
-  'rgb(16, 185, 129)',   // green
-  'rgb(249, 115, 22)',   // orange
-  'rgb(139, 92, 246)',   // purple
-  'rgb(236, 72, 153)',   // pink
-  'rgb(245, 158, 11)',   // amber
-  'rgb(99, 102, 241)',   // indigo
-  'rgb(20, 184, 166)',   // teal
-  'rgb(239, 68, 68)',    // red
-  'rgb(107, 114, 128)',  // gray
+  'rgba(59, 130, 246, 0.8)',   // blue
+  'rgba(16, 185, 129, 0.8)',   // green
+  'rgba(249, 115, 22, 0.8)',   // orange
+  'rgba(139, 92, 246, 0.8)',   // purple
+  'rgba(236, 72, 153, 0.8)',   // pink
+  'rgba(245, 158, 11, 0.8)',   // amber
+  'rgba(99, 102, 241, 0.8)',   // indigo
+  'rgba(20, 184, 166, 0.8)',   // teal
+  'rgba(239, 68, 68, 0.8)',    // red
+  'rgba(107, 114, 128, 0.8)',  // gray
+];
+
+const CHART_BORDER_COLORS = [
+  'rgba(59, 130, 246, 1)',   // blue
+  'rgba(16, 185, 129, 1)',   // green
+  'rgba(249, 115, 22, 1)',   // orange
+  'rgba(139, 92, 246, 1)',   // purple
+  'rgba(236, 72, 153, 1)',   // pink
+  'rgba(245, 158, 11, 1)',   // amber
+  'rgba(99, 102, 241, 1)',   // indigo
+  'rgba(20, 184, 166, 1)',   // teal
+  'rgba(239, 68, 68, 1)',    // red
+  'rgba(107, 114, 128, 1)',  // gray
 ];
 
 export function ExtensionChart({ stats }: ExtensionChartProps) {
@@ -33,7 +46,7 @@ export function ExtensionChart({ stats }: ExtensionChartProps) {
       {
         data: stats.map(s => s.totalDownloads),
         backgroundColor: stats.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-        borderColor: stats.map((_, i) => CHART_COLORS[i % CHART_COLORS.length].replace('rgb', 'rgba').replace(')', ', 1)')),
+        borderColor: stats.map((_, i) => CHART_BORDER_COLORS[i % CHART_BORDER_COLORS.length]),
         borderWidth: 2,
       },
     ],

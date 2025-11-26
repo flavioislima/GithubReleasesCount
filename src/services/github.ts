@@ -1,6 +1,7 @@
 import type { GitHubRelease } from '../types/github';
 
 const GITHUB_API_BASE = 'https://api.github.com';
+export const NO_EXTENSION = 'no extension';
 
 export async function fetchReleases(owner: string, repo: string): Promise<GitHubRelease[]> {
   const allReleases: GitHubRelease[] = [];
@@ -44,5 +45,5 @@ export async function fetchReleases(owner: string, repo: string): Promise<GitHub
 
 export function getFileExtension(filename: string): string {
   const match = filename.match(/\.([^.]+)$/);
-  return match ? `.${match[1].toLowerCase()}` : 'no extension';
+  return match ? `.${match[1].toLowerCase()}` : NO_EXTENSION;
 }
