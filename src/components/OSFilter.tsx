@@ -60,7 +60,7 @@ export function OSFilter({ assets, flathubDownloads }: OSFilterProps) {
         .reduce((sum, asset) => sum + asset.downloadCount, 0);
       
       // Add Flathub downloads to Linux count
-      if (os === 'linux' && flathubDownloads) {
+      if (os === 'linux' && flathubDownloads != null) {
         totalDownloads += flathubDownloads;
       }
       
@@ -102,7 +102,7 @@ export function OSFilter({ assets, flathubDownloads }: OSFilterProps) {
             ? ((stat.totalDownloads / totalDownloads) * 100).toFixed(1) 
             : '0';
           const colors = OS_COLORS[stat.os];
-          const showFlathub = stat.os === 'linux' && flathubDownloads;
+          const showFlathub = stat.os === 'linux' && flathubDownloads != null;
           
           return (
             <div 
